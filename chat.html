@@ -165,14 +165,19 @@
 
       let noUsersOnlineTimeout;
 
+      // Function to update the online user count
+      const updateOnlineUsersCount = (activeUsers) => {
+        const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
+        onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
+      };
+
       // Display online users and handle message reset when no users are online
       onValue(activeUsersRef, (snapshot) => {
         const activeUsers = snapshot.val();
-        const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
-        onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
+        updateOnlineUsersCount(activeUsers);
 
         // If no users are online, start a timer to delete messages after 1 second
-        if (onlineCount === 0) {
+        if (Object.keys(activeUsers || {}).length === 0) {
           clearTimeout(noUsersOnlineTimeout);
           noUsersOnlineTimeout = setTimeout(deleteMessages, 1000);
         } else {
