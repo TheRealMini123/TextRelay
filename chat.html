@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TextRelay Chat</title>
+    <!-- Link to the favicon icon.png -->
     <link rel="icon" href="icon.png" type="image/png" />
     <style>
       body {
@@ -133,11 +134,7 @@
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
         if (message) {
-          push(messagesRef, {
-            user: username,
-            text: message,
-            timestamp: Date.now(),
-          });
+          push(messagesRef, { user: username, text: message, timestamp: Date.now() });
           messageInput.value = "";
         }
       });
@@ -150,9 +147,7 @@
           Object.values(messages).forEach((msg) => {
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
-            messageElement.classList.add(
-              msg.user === username ? "user" : "other"
-            );
+            messageElement.classList.add(msg.user === username ? "user" : "other");
             messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
             chatContainer.appendChild(messageElement);
           });
