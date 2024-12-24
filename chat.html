@@ -163,9 +163,6 @@
       const sendButton = document.getElementById("send-button");
       const onlineUsersDisplay = document.getElementById("online-users");
 
-      let lastActivityTime = Date.now();
-      let inactivityTimeout;
-
       // Function to update the online user count
       const updateOnlineUsersCount = (activeUsers) => {
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
@@ -178,12 +175,12 @@
         updateOnlineUsersCount(activeUsers);
       });
 
-      // Delete messages after 60 seconds of inactivity (no messages or no users active)
-      const deleteMessagesAfterInactivity = () => {
-        inactivityTimeout = setTimeout(() => {
+      // Delete messages after 60 seconds regardless of user status
+      const deleteMessagesAfterTimeout = () => {
+        setTimeout(() => {
           remove(messagesRef)
             .then(() => {
-              console.log("Messages deleted permanently after 60 seconds of inactivity.");
+              console.log("Messages deleted after 60 seconds.");
             })
             .catch((error) => {
               console.error("Failed to delete messages:", error);
@@ -191,14 +188,21 @@
         }, 60000); // 60 seconds
       };
 
-      // Cancel timeout on any user activity (message sent or user interaction)
-      const resetInactivityTimer = () => {
-        clearTimeout(inactivityTimeout); // Clear previous timeout
-        lastActivityTime = Date.now(); // Reset last activity time
-        deleteMessagesAfterInactivity(); // Set a new timeout
-      };
+      // Handle sending a message
+      sendButton.addEventListener("click", () => {
+        const message = messageInput.value.trim();
+        if (message) {
+          push(messagesRef, { user: username, text: message, timestamp: Date.now() });
+          messageInput.value = "";
+          // Restart the message deletion timer
+          deleteMessagesAfterTimeout();
+        }
+      });
 
-      // Load messages from Firebase
+      // Initialize and set the timeout for message deletion
+      deleteMessagesAfterTimeout();
+
+      // Load messages when a user joins or refreshes the page
       const loadMessages = () => {
         onValue(messagesRef, (snapshot) => {
           chatContainer.innerHTML = "";
@@ -216,20 +220,7 @@
         });
       };
 
-      // Handle sending a message
-      sendButton.addEventListener("click", () => {
-        const message = messageInput.value.trim();
-        if (message) {
-          push(messagesRef, { user: username, text: message, timestamp: Date.now() });
-          messageInput.value = "";
-          resetInactivityTimer(); // Reset inactivity timer after sending a message
-        }
-      });
-
-      // Initialize and reset inactivity timer
-      deleteMessagesAfterInactivity();
-
-      // Load messages when a user joins or refreshes the page
+      // Load the messages and start the timer
       loadMessages();
     </script>
   </body>
