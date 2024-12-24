@@ -135,25 +135,18 @@
       const sendButton = document.getElementById("send-button");
 
       // Function to delete messages older than 120 seconds (2 minutes)
-      const deleteOldMessages = () => {
-        onValue(messagesRef, (snapshot) => {
-          const messages = snapshot.val();
-          if (messages) {
-            const currentTime = Date.now();
-            Object.keys(messages).forEach((key) => {
-              const message = messages[key];
-              // Check if the message is older than 120 seconds (2 minutes)
-              if (currentTime - message.timestamp > 120000) {
-                remove(ref(database, `messages/${key}`)); // Remove message
-              }
-            });
+      const deleteOldMessages = (messages) => {
+        const currentTime = Date.now();
+        Object.keys(messages).forEach((key) => {
+          const message = messages[key];
+          // Check if the message is older than 120 seconds (2 minutes)
+          if (currentTime - message.timestamp > 120000) {
+            remove(ref(database, `messages/${key}`)); // Remove message
           }
         });
       };
 
-      // Run the delete function every 30 seconds
-      setInterval(deleteOldMessages, 30000);
-
+      // Send button functionality
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
         if (message) {
@@ -167,6 +160,10 @@
         chatContainer.innerHTML = "";
         const messages = snapshot.val();
         if (messages) {
+          // Delete old messages while processing the new ones
+          deleteOldMessages(messages);
+
+          // Display new messages
           Object.values(messages).forEach((msg) => {
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
@@ -180,4 +177,3 @@
     </script>
   </body>
 </html>
-
