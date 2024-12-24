@@ -169,22 +169,22 @@
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
         onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
 
-        // Reset messages if no one is online
+        // If no users are online, delete messages and stop loading
         if (onlineCount === 0) {
-          resetMessages();
+          deleteMessages();
         } else {
           loadMessages();
         }
       });
 
-      // Reset messages when no users are online
-      const resetMessages = () => {
+      // Delete messages when no users are online
+      const deleteMessages = () => {
         remove(messagesRef)
-          .then(() => console.log("Messages reset successfully."))
-          .catch((error) => console.error("Failed to reset messages:", error));
+          .then(() => console.log("Messages deleted because no users are online."))
+          .catch((error) => console.error("Failed to delete messages:", error));
       };
 
-      // Load messages if there are users online
+      // Load messages only when users are online
       const loadMessages = () => {
         onValue(messagesRef, (snapshot) => {
           chatContainer.innerHTML = "";
@@ -213,4 +213,3 @@
     </script>
   </body>
 </html>
-
