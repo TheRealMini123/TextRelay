@@ -170,7 +170,6 @@
         push,
         onValue,
         set,
-        onDisconnect,
         remove
       } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
@@ -188,23 +187,51 @@
 
       const messagesRef = ref(database, "messages");
       const activeUsersRef = ref(database, "activeUsers");
+      const resetTimerRef = ref(database, "resetTimer");
       const username = localStorage.getItem("username");
 
       if (!username) {
         window.location.href = "index.html";
       }
 
-      // Set the user as active
-      set(ref(database, `activeUsers/${username}`), true);
-      onDisconnect(ref(database, `activeUsers/${username}`)).remove();
+      // Get or set the reset time
+      const initializeResetTimer = async () => {
+        const resetSnapshot = await get(resetTimerRef);
+        let resetTime;
+        if (resetSnapshot.exists()) {
+          resetTime = resetSnapshot.val();
+        } else {
+          resetTime = Date.now() + 120000; // Set a new reset time (2 minutes from now)
+          set(resetTimerRef, resetTime);
+        }
+        return resetTime;
+      };
+
+      // Display the reset timer
+      const displayResetTimer = async () => {
+        const resetTime = await initializeResetTimer();
+
+        const updateTimerDisplay = () => {
+          const timeLeft = Math.max(0, Math.floor((resetTime - Date.now()) / 1000));
+          document.getElementById("reset-timer").textContent = `Reset in: ${timeLeft}s`;
+
+          if (timeLeft <= 0) {
+            remove(messagesRef);
+            const newResetTime = Date.now() + 120000; // Reset for another 2 minutes
+            set(resetTimerRef, newResetTime);
+          }
+        };
+
+        setInterval(updateTimerDisplay, 1000);
+        updateTimerDisplay();
+      };
+
+      displayResetTimer();
 
       const chatContainer = document.getElementById("chat-container");
       const messageInput = document.getElementById("message-input");
       const sendButton = document.getElementById("send-button");
       const onlineUsersDisplay = document.getElementById("online-users");
-      const resetTimerDisplay = document.getElementById("reset-timer");
-
-      let resetCountdown = 120;
 
       // Update the online users count
       onValue(activeUsersRef, (snapshot) => {
@@ -212,19 +239,6 @@
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
         onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
       });
-
-      // Update the reset timer every second
-      setInterval(() => {
-        resetCountdown--;
-        resetTimerDisplay.textContent = `Reset in: ${resetCountdown}s`;
-
-        if (resetCountdown <= 0) {
-          resetCountdown = 120;
-          remove(messagesRef)
-            .then(() => console.log("Messages reset successfully."))
-            .catch((error) => console.error("Failed to reset messages:", error));
-        }
-      }, 1000);
 
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
@@ -238,17 +252,12 @@
         chatContainer.innerHTML = "";
         const messages = snapshot.val();
         if (messages) {
-          const currentTime = Date.now();
           Object.entries(messages).forEach(([key, msg]) => {
-            if (currentTime - msg.timestamp > 120000) {
-              remove(ref(database, `messages/${key}`));
-            } else {
-              const messageElement = document.createElement("div");
-              messageElement.classList.add("message");
-              messageElement.classList.add(msg.user === username ? "user" : "other");
-              messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
-              chatContainer.appendChild(messageElement);
-            }
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message");
+            messageElement.classList.add(msg.user === username ? "user" : "other");
+            messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
+            chatContainer.appendChild(messageElement);
           });
           chatContainer.scrollTop = chatContainer.scrollHeight;
         }
