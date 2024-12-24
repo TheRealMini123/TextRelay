@@ -23,6 +23,19 @@
         text-align: center;
         font-size: 1.5em;
         font-weight: bold;
+        position: relative;
+      }
+      #online-users {
+        position: absolute;
+        top: 50%;
+        left: 15px;
+        transform: translateY(-50%);
+        font-size: 0.9em;
+        background-color: #3b82f6;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: normal;
       }
       #chat-container {
         flex: 1;
@@ -82,7 +95,10 @@
     </style>
   </head>
   <body>
-    <header>TextRelay Chat</header>
+    <header>
+      TextRelay Chat
+      <div id="online-users">Online: 0</div>
+    </header>
     <div id="chat-container"></div>
     <div id="message-input-container">
       <input
@@ -102,8 +118,7 @@
         onValue,
         set,
         onDisconnect,
-        remove,
-        get
+        remove
       } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
       const firebaseConfig = {
@@ -133,15 +148,27 @@
       const chatContainer = document.getElementById("chat-container");
       const messageInput = document.getElementById("message-input");
       const sendButton = document.getElementById("send-button");
+      const onlineUsersDisplay = document.getElementById("online-users");
+
+      // Function to update the online users count
+      const updateOnlineUsers = () => {
+        onValue(activeUsersRef, (snapshot) => {
+          const activeUsers = snapshot.val();
+          const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
+          onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
+        });
+      };
+
+      // Call updateOnlineUsers initially and listen for changes
+      updateOnlineUsers();
 
       // Function to delete messages older than 120 seconds (2 minutes)
       const deleteOldMessages = (messages) => {
         const currentTime = Date.now();
         Object.keys(messages).forEach((key) => {
           const message = messages[key];
-          // Check if the message is older than 120 seconds (2 minutes)
           if (currentTime - message.timestamp > 120000) {
-            remove(ref(database, `messages/${key}`)); // Remove message
+            remove(ref(database, `messages/${key}`));
           }
         });
       };
@@ -160,10 +187,8 @@
         chatContainer.innerHTML = "";
         const messages = snapshot.val();
         if (messages) {
-          // Delete old messages while processing the new ones
           deleteOldMessages(messages);
 
-          // Display new messages
           Object.values(messages).forEach((msg) => {
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
