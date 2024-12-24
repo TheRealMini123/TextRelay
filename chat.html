@@ -37,6 +37,15 @@
         border-radius: 5px;
         font-weight: normal;
       }
+      #reset-timer {
+        position: absolute;
+        top: 50%;
+        right: 15px;
+        transform: translateY(-50%);
+        font-size: 0.9em;
+        color: red;
+        font-weight: bold;
+      }
       #chat-container {
         flex: 1;
         display: flex;
@@ -98,6 +107,7 @@
     <header>
       TextRelay Chat
       <div id="online-users">Online: 0</div>
+      <div id="reset-timer">Reset in: 120s</div>
     </header>
     <div id="chat-container"></div>
     <div id="message-input-container">
@@ -149,6 +159,9 @@
       const messageInput = document.getElementById("message-input");
       const sendButton = document.getElementById("send-button");
       const onlineUsersDisplay = document.getElementById("online-users");
+      const resetTimerDisplay = document.getElementById("reset-timer");
+
+      let resetCountdown = 120; // 120 seconds for reset
 
       // Function to update the online users count
       const updateOnlineUsers = () => {
@@ -173,7 +186,19 @@
         });
       };
 
-      // Send button functionality
+      // Update the reset timer every second
+      setInterval(() => {
+        resetCountdown--;
+        resetTimerDisplay.textContent = `Reset in: ${resetCountdown}s`;
+
+        if (resetCountdown <= 0) {
+          resetCountdown = 120; // Reset countdown
+          remove(messagesRef)
+            .then(() => console.log("Messages reset successfully."))
+            .catch((error) => console.error("Failed to reset messages:", error));
+        }
+      }, 1000);
+
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
         if (message) {
@@ -202,3 +227,4 @@
     </script>
   </body>
 </html>
+
