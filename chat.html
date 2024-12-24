@@ -118,32 +118,6 @@
       #send-button:hover {
         background-color: #153e75;
       }
-
-      @media (max-width: 768px) {
-        header {
-          font-size: 1em;
-        }
-
-        #online-users,
-        #reset-timer {
-          font-size: 0.8em;
-          padding: 3px 8px;
-        }
-
-        .message {
-          font-size: 0.9em;
-        }
-
-        #send-button {
-          padding: 8px;
-          font-size: 0.9em;
-        }
-
-        #message-input {
-          font-size: 0.9em;
-          padding: 8px;
-        }
-      }
     </style>
   </head>
   <body>
@@ -223,8 +197,7 @@
           }
         };
 
-        setInterval(updateTimerDisplay, 1000);
-        updateTimerDisplay();
+        setInterval(updateTimerDisplay, 1000); // Update timer display every second
       };
 
       displayResetTimer();
