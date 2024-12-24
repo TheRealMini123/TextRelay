@@ -154,7 +154,7 @@
         window.location.href = "index.html";
       }
 
-      // Online user tracking
+      // Set user as active
       set(ref(database, `activeUsers/${username}`), true);
       onDisconnect(ref(database, `activeUsers/${username}`)).remove();
 
@@ -163,25 +163,33 @@
       const sendButton = document.getElementById("send-button");
       const onlineUsersDisplay = document.getElementById("online-users");
 
+      let noUsersOnlineTimeout;
+
       // Display online users and handle message reset when no users are online
       onValue(activeUsersRef, (snapshot) => {
         const activeUsers = snapshot.val();
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
         onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
 
-        // If no users are online, delete messages and stop loading
+        // If no users are online, start a timer to delete messages after 1 second
         if (onlineCount === 0) {
-          deleteMessages();
+          clearTimeout(noUsersOnlineTimeout);
+          noUsersOnlineTimeout = setTimeout(deleteMessages, 1000);
         } else {
+          clearTimeout(noUsersOnlineTimeout);
           loadMessages();
         }
       });
 
-      // Delete messages when no users are online
+      // Delete messages permanently after 1 second with no users online
       const deleteMessages = () => {
         remove(messagesRef)
-          .then(() => console.log("Messages deleted because no users are online."))
-          .catch((error) => console.error("Failed to delete messages:", error));
+          .then(() => {
+            console.log("Messages deleted permanently due to no users being online for 1 second.");
+          })
+          .catch((error) => {
+            console.error("Failed to delete messages:", error);
+          });
       };
 
       // Load messages only when users are online
