@@ -38,20 +38,6 @@
         border-radius: 5px;
       }
 
-      #reset-timer {
-        position: absolute;
-        top: 50%;
-        right: 15px;
-        transform: translateY(-50%);
-        font-size: 1em;
-        color: red;
-        font-weight: bold;
-        padding: 5px 10px;
-        background-color: #ffe5e5;
-        border: 2px solid red;
-        border-radius: 5px;
-      }
-
       #chat-container {
         flex: 1;
         display: flex;
@@ -124,7 +110,6 @@
     <header>
       TextRelay Chat
       <div id="online-users">Online: 0</div>
-      <div id="reset-timer">Reset in: 120s</div>
     </header>
     <div id="chat-container"></div>
     <div id="message-input-container">
@@ -163,7 +148,6 @@
 
       const messagesRef = ref(database, "messages");
       const activeUsersRef = ref(database, "activeUsers");
-      const resetTimerRef = ref(database, "resetTimer");
       const username = localStorage.getItem("username");
 
       if (!username) {
@@ -173,39 +157,6 @@
       // Online user tracking
       set(ref(database, `activeUsers/${username}`), true);
       onDisconnect(ref(database, `activeUsers/${username}`)).remove();
-
-      // Function to ensure reset time is consistent
-      const initializeResetTimer = async () => {
-        const snapshot = await get(resetTimerRef);
-        let resetTime;
-        if (snapshot.exists()) {
-          resetTime = snapshot.val();
-        } else {
-          resetTime = Date.now() + 120000; // Set initial reset time (2 minutes)
-          set(resetTimerRef, resetTime);
-        }
-        return resetTime;
-      };
-
-      const displayResetTimer = async () => {
-        const resetTime = await initializeResetTimer();
-
-        const updateTimerDisplay = () => {
-          const currentTime = Date.now();
-          const timeLeft = Math.max(0, Math.floor((resetTime - currentTime) / 1000));
-          document.getElementById("reset-timer").textContent = `Reset in: ${timeLeft}s`;
-
-          if (timeLeft <= 0) {
-            remove(messagesRef);
-            const newResetTime = Date.now() + 120000; // Reset for another 2 minutes
-            set(resetTimerRef, newResetTime);
-          }
-        };
-
-        setInterval(updateTimerDisplay, 1000); // Update every second
-      };
-
-      displayResetTimer();
 
       const chatContainer = document.getElementById("chat-container");
       const messageInput = document.getElementById("message-input");
