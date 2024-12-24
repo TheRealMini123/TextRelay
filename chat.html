@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TextRelay Chat</title>
-    <!-- Link to the favicon icon.png -->
     <link rel="icon" href="icon.png" type="image/png" />
     <style>
       body {
@@ -16,15 +15,17 @@
         height: 100vh;
         background-color: #f3f4f6;
       }
+
       header {
         background-color: #1e3a8a;
         color: white;
-        padding: 15px;
+        padding: 10px 15px;
         text-align: center;
-        font-size: 1.5em;
+        font-size: 1.2em;
         font-weight: bold;
         position: relative;
       }
+
       #online-users {
         position: absolute;
         top: 50%;
@@ -35,65 +36,75 @@
         color: white;
         padding: 5px 10px;
         border-radius: 5px;
-        font-weight: normal;
       }
+
       #reset-timer {
         position: absolute;
         top: 50%;
         right: 15px;
         transform: translateY(-50%);
-        font-size: 1.2em;
+        font-size: 1em;
         color: red;
         font-weight: bold;
-        border: 2px solid red;
         padding: 5px 10px;
-        border-radius: 5px;
         background-color: #ffe5e5;
+        border: 2px solid red;
+        border-radius: 5px;
       }
+
       #chat-container {
         flex: 1;
         display: flex;
         flex-direction: column;
-        padding: 15px;
+        padding: 10px;
         overflow-y: auto;
         background-color: #e5e7eb;
       }
+
       .message {
         margin-bottom: 10px;
         padding: 10px;
-        max-width: 60%;
+        max-width: 80%;
         border-radius: 15px;
         font-size: 1em;
         line-height: 1.5;
+        word-wrap: break-word;
       }
+
       .message span {
         font-weight: bold;
       }
+
       .message.user {
         align-self: flex-end;
         background-color: #1e3a8a;
         color: white;
       }
+
       .message.other {
         align-self: flex-start;
         background-color: #d1d5db;
         color: black;
       }
+
       #message-input-container {
         display: flex;
         padding: 10px;
         border-top: 1px solid #ccc;
         background-color: #ffffff;
       }
+
       #message-input {
         flex: 1;
         padding: 10px;
         font-size: 16px;
         border: 1px solid #ccc;
         border-radius: 5px;
+        box-sizing: border-box;
       }
+
       #send-button {
-        padding: 10px 15px;
+        padding: 10px;
         margin-left: 10px;
         background-color: #1e3a8a;
         color: white;
@@ -101,9 +112,37 @@
         border-radius: 5px;
         cursor: pointer;
         font-size: 1em;
+        box-sizing: border-box;
       }
+
       #send-button:hover {
         background-color: #153e75;
+      }
+
+      @media (max-width: 768px) {
+        header {
+          font-size: 1em;
+        }
+
+        #online-users,
+        #reset-timer {
+          font-size: 0.8em;
+          padding: 3px 8px;
+        }
+
+        .message {
+          font-size: 0.9em;
+        }
+
+        #send-button {
+          padding: 8px;
+          font-size: 0.9em;
+        }
+
+        #message-input {
+          font-size: 0.9em;
+          padding: 8px;
+        }
       }
     </style>
   </head>
@@ -165,30 +204,14 @@
       const onlineUsersDisplay = document.getElementById("online-users");
       const resetTimerDisplay = document.getElementById("reset-timer");
 
-      let resetCountdown = 120; // 120 seconds for reset
+      let resetCountdown = 120;
 
-      // Function to update the online users count
-      const updateOnlineUsers = () => {
-        onValue(activeUsersRef, (snapshot) => {
-          const activeUsers = snapshot.val();
-          const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
-          onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
-        });
-      };
-
-      // Call updateOnlineUsers initially and listen for changes
-      updateOnlineUsers();
-
-      // Function to delete messages older than 120 seconds (2 minutes)
-      const deleteOldMessages = (messages) => {
-        const currentTime = Date.now();
-        Object.keys(messages).forEach((key) => {
-          const message = messages[key];
-          if (currentTime - message.timestamp > 120000) {
-            remove(ref(database, `messages/${key}`));
-          }
-        });
-      };
+      // Update the online users count
+      onValue(activeUsersRef, (snapshot) => {
+        const activeUsers = snapshot.val();
+        const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
+        onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
+      });
 
       // Update the reset timer every second
       setInterval(() => {
@@ -196,7 +219,7 @@
         resetTimerDisplay.textContent = `Reset in: ${resetCountdown}s`;
 
         if (resetCountdown <= 0) {
-          resetCountdown = 120; // Reset countdown
+          resetCountdown = 120;
           remove(messagesRef)
             .then(() => console.log("Messages reset successfully."))
             .catch((error) => console.error("Failed to reset messages:", error));
@@ -211,19 +234,21 @@
         }
       });
 
-      // Listen for new messages and update the chat container
       onValue(messagesRef, (snapshot) => {
         chatContainer.innerHTML = "";
         const messages = snapshot.val();
         if (messages) {
-          deleteOldMessages(messages);
-
-          Object.values(messages).forEach((msg) => {
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
-            messageElement.classList.add(msg.user === username ? "user" : "other");
-            messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
-            chatContainer.appendChild(messageElement);
+          const currentTime = Date.now();
+          Object.entries(messages).forEach(([key, msg]) => {
+            if (currentTime - msg.timestamp > 120000) {
+              remove(ref(database, `messages/${key}`));
+            } else {
+              const messageElement = document.createElement("div");
+              messageElement.classList.add("message");
+              messageElement.classList.add(msg.user === username ? "user" : "other");
+              messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
+              chatContainer.appendChild(messageElement);
+            }
           });
           chatContainer.scrollTop = chatContainer.scrollHeight;
         }
@@ -231,5 +256,3 @@
     </script>
   </body>
 </html>
-
-
