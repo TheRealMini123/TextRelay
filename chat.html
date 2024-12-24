@@ -170,7 +170,9 @@
         push,
         onValue,
         set,
-        remove
+        onDisconnect,
+        remove,
+        get,
       } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
       const firebaseConfig = {
@@ -194,30 +196,29 @@
         window.location.href = "index.html";
       }
 
-      // Get or set the reset time
       const initializeResetTimer = async () => {
         const resetSnapshot = await get(resetTimerRef);
         let resetTime;
         if (resetSnapshot.exists()) {
           resetTime = resetSnapshot.val();
         } else {
-          resetTime = Date.now() + 120000; // Set a new reset time (2 minutes from now)
+          resetTime = Date.now() + 120000; // 2 minutes from now
           set(resetTimerRef, resetTime);
         }
         return resetTime;
       };
 
-      // Display the reset timer
       const displayResetTimer = async () => {
         const resetTime = await initializeResetTimer();
 
         const updateTimerDisplay = () => {
-          const timeLeft = Math.max(0, Math.floor((resetTime - Date.now()) / 1000));
+          const currentTime = Date.now();
+          const timeLeft = Math.max(0, Math.floor((resetTime - currentTime) / 1000));
           document.getElementById("reset-timer").textContent = `Reset in: ${timeLeft}s`;
 
           if (timeLeft <= 0) {
             remove(messagesRef);
-            const newResetTime = Date.now() + 120000; // Reset for another 2 minutes
+            const newResetTime = Date.now() + 120000; // Set for another 2 minutes
             set(resetTimerRef, newResetTime);
           }
         };
@@ -233,7 +234,6 @@
       const sendButton = document.getElementById("send-button");
       const onlineUsersDisplay = document.getElementById("online-users");
 
-      // Update the online users count
       onValue(activeUsersRef, (snapshot) => {
         const activeUsers = snapshot.val();
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
@@ -252,7 +252,7 @@
         chatContainer.innerHTML = "";
         const messages = snapshot.val();
         if (messages) {
-          Object.entries(messages).forEach(([key, msg]) => {
+          Object.values(messages).forEach((msg) => {
             const messageElement = document.createElement("div");
             messageElement.classList.add("message");
             messageElement.classList.add(msg.user === username ? "user" : "other");
