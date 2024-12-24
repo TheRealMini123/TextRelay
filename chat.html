@@ -144,9 +144,9 @@
         push,
         onValue,
         set,
-        onDisconnect,
         remove,
         get,
+        onDisconnect,
       } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
       const firebaseConfig = {
@@ -170,13 +170,17 @@
         window.location.href = "index.html";
       }
 
+      // Online user tracking
+      set(ref(database, `activeUsers/${username}`), true);
+      onDisconnect(ref(database, `activeUsers/${username}`)).remove();
+
       const initializeResetTimer = async () => {
-        const resetSnapshot = await get(resetTimerRef);
+        const snapshot = await get(resetTimerRef);
         let resetTime;
-        if (resetSnapshot.exists()) {
-          resetTime = resetSnapshot.val();
+        if (snapshot.exists()) {
+          resetTime = snapshot.val();
         } else {
-          resetTime = Date.now() + 120000; // 2 minutes from now
+          resetTime = Date.now() + 120000; // Set initial reset time (2 minutes)
           set(resetTimerRef, resetTime);
         }
         return resetTime;
@@ -192,12 +196,12 @@
 
           if (timeLeft <= 0) {
             remove(messagesRef);
-            const newResetTime = Date.now() + 120000; // Set for another 2 minutes
+            const newResetTime = Date.now() + 120000; // Reset for another 2 minutes
             set(resetTimerRef, newResetTime);
           }
         };
 
-        setInterval(updateTimerDisplay, 1000); // Update timer display every second
+        setInterval(updateTimerDisplay, 1000); // Update every second
       };
 
       displayResetTimer();
@@ -207,12 +211,14 @@
       const sendButton = document.getElementById("send-button");
       const onlineUsersDisplay = document.getElementById("online-users");
 
+      // Display online users
       onValue(activeUsersRef, (snapshot) => {
         const activeUsers = snapshot.val();
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
         onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
       });
 
+      // Send message
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
         if (message) {
@@ -221,6 +227,7 @@
         }
       });
 
+      // Listen for new messages
       onValue(messagesRef, (snapshot) => {
         chatContainer.innerHTML = "";
         const messages = snapshot.val();
