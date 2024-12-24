@@ -168,27 +168,19 @@
         const activeUsers = snapshot.val();
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
         onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
+
+        // Reset messages if no one is online
+        if (onlineCount === 0) {
+          resetMessages();
+        }
       });
 
-      // Function to delete messages older than 120 seconds (2 minutes)
-      const deleteOldMessages = () => {
-        const currentTime = Date.now();
-        onValue(messagesRef, (snapshot) => {
-          const messages = snapshot.val();
-          if (messages) {
-            Object.keys(messages).forEach((key) => {
-              const message = messages[key];
-              // If message is older than 120 seconds, delete it
-              if (currentTime - message.timestamp > 120000) {
-                remove(ref(database, `messages/${key}`)); // Remove the message
-              }
-            });
-          }
-        });
+      // Reset messages when no users are online
+      const resetMessages = () => {
+        remove(messagesRef)
+          .then(() => console.log("Messages reset successfully."))
+          .catch((error) => console.error("Failed to reset messages:", error));
       };
-
-      // Run the delete function every 30 seconds to clean up old messages
-      setInterval(deleteOldMessages, 30000);
 
       // Send message
       sendButton.addEventListener("click", () => {
