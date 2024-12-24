@@ -170,6 +170,26 @@
         onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
       });
 
+      // Function to delete messages older than 120 seconds (2 minutes)
+      const deleteOldMessages = () => {
+        onValue(messagesRef, (snapshot) => {
+          const messages = snapshot.val();
+          if (messages) {
+            const currentTime = Date.now();
+            Object.keys(messages).forEach((key) => {
+              const message = messages[key];
+              // Check if the message is older than 120 seconds (2 minutes)
+              if (currentTime - message.timestamp > 120000) {
+                remove(ref(database, `messages/${key}`)); // Remove message
+              }
+            });
+          }
+        });
+      };
+
+      // Run the delete function every 30 seconds
+      setInterval(deleteOldMessages, 30000);
+
       // Send message
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
