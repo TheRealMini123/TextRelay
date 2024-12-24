@@ -163,7 +163,7 @@
       const sendButton = document.getElementById("send-button");
       const onlineUsersDisplay = document.getElementById("online-users");
 
-      // Display online users
+      // Display online users and handle message reset when no users are online
       onValue(activeUsersRef, (snapshot) => {
         const activeUsers = snapshot.val();
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
@@ -172,6 +172,8 @@
         // Reset messages if no one is online
         if (onlineCount === 0) {
           resetMessages();
+        } else {
+          loadMessages();
         }
       });
 
@@ -182,6 +184,24 @@
           .catch((error) => console.error("Failed to reset messages:", error));
       };
 
+      // Load messages if there are users online
+      const loadMessages = () => {
+        onValue(messagesRef, (snapshot) => {
+          chatContainer.innerHTML = "";
+          const messages = snapshot.val();
+          if (messages) {
+            Object.values(messages).forEach((msg) => {
+              const messageElement = document.createElement("div");
+              messageElement.classList.add("message");
+              messageElement.classList.add(msg.user === username ? "user" : "other");
+              messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
+              chatContainer.appendChild(messageElement);
+            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+          }
+        });
+      };
+
       // Send message
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
@@ -190,22 +210,7 @@
           messageInput.value = "";
         }
       });
-
-      // Listen for new messages
-      onValue(messagesRef, (snapshot) => {
-        chatContainer.innerHTML = "";
-        const messages = snapshot.val();
-        if (messages) {
-          Object.values(messages).forEach((msg) => {
-            const messageElement = document.createElement("div");
-            messageElement.classList.add("message");
-            messageElement.classList.add(msg.user === username ? "user" : "other");
-            messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
-            chatContainer.appendChild(messageElement);
-          });
-          chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-      });
     </script>
   </body>
 </html>
+
