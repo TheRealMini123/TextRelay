@@ -55,6 +55,7 @@
         font-size: 1em;
         line-height: 1.5;
         word-wrap: break-word;
+        position: relative;
       }
 
       .message span {
@@ -71,6 +72,17 @@
         align-self: flex-start;
         background-color: #d1d5db;
         color: black;
+      }
+
+      .delete-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: transparent;
+        border: none;
+        color: red;
+        font-size: 0.8em;
+        cursor: pointer;
       }
 
       #message-input-container {
@@ -196,8 +208,9 @@
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
         if (message) {
-          push(messagesRef, { user: username, text: message, timestamp: Date.now() });
+          const messageRef = push(messagesRef, { user: username, text: message, timestamp: Date.now() });
           messageInput.value = "";
+          setTimeout(() => remove(messageRef), 60000);
         }
       });
 
@@ -213,7 +226,8 @@
           uploadBytes(imageRef, file)
             .then(() => getDownloadURL(imageRef))
             .then((url) => {
-              push(messagesRef, { user: username, imageUrl: url, timestamp: Date.now() });
+              const messageRef = push(messagesRef, { user: username, imageUrl: url, timestamp: Date.now() });
+              setTimeout(() => remove(messageRef), 60000);
             })
             .catch((error) => console.error("Image upload failed:", error));
         }
@@ -225,21 +239,31 @@
           chatContainer.innerHTML = "";
           const messages = snapshot.val();
           if (messages) {
-            Object.values(messages).forEach((msg) => {
+            Object.entries(messages).forEach(([key, msg]) => {
               const messageElement = document.createElement("div");
               messageElement.classList.add("message");
-              messageElement.classList.add(msg.user === username ? "user" : "other");
+             messageElement.classList.add(msg.user === username ? "user" : "other              ");
               if (msg.text) {
-                messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
+                messageElement.innerHTML = `<span>${msg.user}</span>: ${msg.text}`;
               } else if (msg.imageUrl) {
-                messageElement.innerHTML = `<span>${msg.user}:</span> <img src="${msg.imageUrl}" alt="Image" style="max-width: 100%; border-radius: 10px;" />`;
+                messageElement.innerHTML = `<span>${msg.user}</span>: <img src="${msg.imageUrl}" alt="Image" style="max-width: 200px; border-radius: 10px;">`;
               }
-              chatContainer.appendChild(messageElement);            });
+              
+              const deleteButton = document.createElement("button");
+              deleteButton.classList.add("delete-button");
+              deleteButton.textContent = "Delete";
+              deleteButton.addEventListener("click", () => {
+                remove(ref(database, `messages/${key}`));
+              });
+
+              messageElement.appendChild(deleteButton);
+              chatContainer.appendChild(messageElement);
+            });
           }
+          chatContainer.scrollTop = chatContainer.scrollHeight;
         });
       };
 
-      // Load the messages initially
       loadMessages();
     </script>
   </body>
