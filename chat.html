@@ -91,7 +91,8 @@
         box-sizing: border-box;
       }
 
-      #send-button {
+      #send-button,
+      #image-upload-button {
         padding: 10px;
         margin-left: 10px;
         background-color: #1e3a8a;
@@ -103,8 +104,19 @@
         box-sizing: border-box;
       }
 
-      #send-button:hover {
+      #send-button:hover,
+      #image-upload-button:hover {
         background-color: #153e75;
+      }
+
+      #image-input {
+        display: none;
+      }
+
+      .image-message img {
+        max-width: 100%;
+        border-radius: 10px;
+        max-height: 300px;
       }
     </style>
   </head>
@@ -121,6 +133,8 @@
         placeholder="Type your message here..."
       />
       <button id="send-button">Send</button>
+      <button id="image-upload-button">Upload Image</button>
+      <input type="file" id="image-input" accept="image/*" />
     </div>
 
     <script type="module">
@@ -134,6 +148,12 @@
         remove,
         onDisconnect,
       } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+      import {
+        getStorage,
+        ref as storageRef,
+        uploadBytes,
+        getDownloadURL,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyCxqfdkXbu5j-0LLZMy8Yfl0OBjliC_aNU",
@@ -146,6 +166,7 @@
 
       const app = initializeApp(firebaseConfig);
       const database = getDatabase(app);
+      const storage = getStorage(app);
 
       const messagesRef = ref(database, "messages");
       const activeUsersRef = ref(database, "activeUsers");
@@ -162,6 +183,8 @@
       const chatContainer = document.getElementById("chat-container");
       const messageInput = document.getElementById("message-input");
       const sendButton = document.getElementById("send-button");
+      const imageInput = document.getElementById("image-input");
+      const imageUploadButton = document.getElementById("image-upload-button");
       const onlineUsersDisplay = document.getElementById("online-users");
 
       // Update online user count
@@ -186,6 +209,25 @@
         }
       });
 
+      // Handle uploading an image
+      imageUploadButton.addEventListener("click", () => {
+        imageInput.click();
+      });
+
+      imageInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const imageRef = storageRef(storage, `images/${Date.now()}_${file.name}`);
+          uploadBytes(imageRef, file)
+            .then(() => getDownloadURL(imageRef))
+            .then((url) => {
+              const messageRef = push(messagesRef, { user: username, imageUrl: url, timestamp: Date.now() });
+              setTimeout(() => remove(messageRef), 60000); // Automatically remove the image after 1 minute
+            })
+            .catch((error) => console.error("Image upload failed:", error));
+        }
+      });
+
       // Load messages
       const loadMessages = () => {
         onValue(messagesRef, (snapshot) => {
@@ -201,6 +243,13 @@
                 messageElement.innerHTML = `<span>${msg.user}</span>: ${msg.text}`;
               }
 
+              if (msg.imageUrl) {
+                const imageElement = document.createElement("div");
+                imageElement.classList.add("image-message");
+                imageElement.innerHTML = `<img src="${msg.imageUrl}" alt="Sent Image" />`;
+                messageElement.appendChild(imageElement);
+              }
+
               chatContainer.appendChild(messageElement);
             });
           }
@@ -212,4 +261,3 @@
     </script>
   </body>
 </html>
-
