@@ -182,7 +182,10 @@
         if (message) {
           const messageRef = push(messagesRef, { user: username, text: message, timestamp: Date.now() });
           messageInput.value = "";
-          setTimeout(() => remove(messageRef), 60000); // Automatically remove the message after 1 minute
+          // Add a delay to remove the message after 1 minute
+          messageRef.then(ref => {
+            setTimeout(() => remove(ref), 60000);
+          });
         }
       });
 
@@ -199,6 +202,14 @@
 
               if (msg.text) {
                 messageElement.innerHTML = `<span>${msg.user}</span>: ${msg.text}`;
+              }
+
+              // Handle deletion logic
+              const currentTime = Date.now();
+              const messageTime = msg.timestamp || 0;
+              const messageAge = currentTime - messageTime;
+              if (messageAge > 60000) {
+                remove(ref(database, `messages/${key}`));
               }
 
               chatContainer.appendChild(messageElement);
