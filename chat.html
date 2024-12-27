@@ -75,6 +75,7 @@
 
       #message-input-container {
         display: flex;
+        align-items: center;
         padding: 10px;
         border-top: 1px solid #ccc;
         background-color: #ffffff;
@@ -89,7 +90,8 @@
         box-sizing: border-box;
       }
 
-      #send-button {
+      #send-button,
+      #image-upload-button {
         padding: 10px;
         margin-left: 10px;
         background-color: #1e3a8a;
@@ -101,8 +103,13 @@
         box-sizing: border-box;
       }
 
-      #send-button:hover {
+      #send-button:hover,
+      #image-upload-button:hover {
         background-color: #153e75;
+      }
+
+      #image-input {
+        display: none;
       }
     </style>
   </head>
@@ -119,6 +126,8 @@
         placeholder="Type your message here..."
       />
       <button id="send-button">Send</button>
+      <button id="image-upload-button">Upload Image</button>
+      <input type="file" id="image-input" accept="image/*" />
     </div>
 
     <script type="module">
@@ -131,20 +140,26 @@
         set,
         remove,
         onDisconnect,
-        get
       } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+      import {
+        getStorage,
+        ref as storageRef,
+        uploadBytes,
+        getDownloadURL,
+      } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyCxqfdkXbu5j-0LLZMy8Yfl0OBjliC_aNU",
         authDomain: "textrelay-1369e.firebaseapp.com",
         projectId: "textrelay-1369e",
-        storageBucket: "textrelay-1369e.firebasestorage.app",
+        storageBucket: "textrelay-1369e.appspot.com",
         messagingSenderId: "80380122534",
         appId: "1:80380122534:web:ad372c4d3932948bf0ab67",
       };
 
       const app = initializeApp(firebaseConfig);
       const database = getDatabase(app);
+      const storage = getStorage(app);
 
       const messagesRef = ref(database, "messages");
       const activeUsersRef = ref(database, "activeUsers");
@@ -161,48 +176,50 @@
       const chatContainer = document.getElementById("chat-container");
       const messageInput = document.getElementById("message-input");
       const sendButton = document.getElementById("send-button");
+      const imageInput = document.getElementById("image-input");
+      const imageUploadButton = document.getElementById("image-upload-button");
       const onlineUsersDisplay = document.getElementById("online-users");
 
-      // Function to update the online user count
+      // Update online user count
       const updateOnlineUsersCount = (activeUsers) => {
         const onlineCount = activeUsers ? Object.keys(activeUsers).length : 0;
         onlineUsersDisplay.textContent = `Online: ${onlineCount}`;
       };
 
-      // Display online users and handle message reset when no users are online
+      // Display online users
       onValue(activeUsersRef, (snapshot) => {
         const activeUsers = snapshot.val();
         updateOnlineUsersCount(activeUsers);
       });
 
-      // Delete messages after 60 seconds regardless of user status
-      const deleteMessagesAfterTimeout = () => {
-        setTimeout(() => {
-          remove(messagesRef)
-            .then(() => {
-              console.log("Messages deleted after 60 seconds.");
-            })
-            .catch((error) => {
-              console.error("Failed to delete messages:", error);
-            });
-        }, 120000); // 60 seconds
-      };
-
-      // Handle sending a message
+      // Handle sending a text message
       sendButton.addEventListener("click", () => {
         const message = messageInput.value.trim();
         if (message) {
           push(messagesRef, { user: username, text: message, timestamp: Date.now() });
           messageInput.value = "";
-          // Restart the message deletion timer
-          deleteMessagesAfterTimeout();
         }
       });
 
-      // Initialize and set the timeout for message deletion
-      deleteMessagesAfterTimeout();
+      // Handle uploading an image
+      imageUploadButton.addEventListener("click", () => {
+        imageInput.click();
+      });
 
-      // Load messages when a user joins or refreshes the page
+      imageInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const imageRef = storageRef(storage, `images/${Date.now()}_${file.name}`);
+          uploadBytes(imageRef, file)
+            .then(() => getDownloadURL(imageRef))
+            .then((url) => {
+              push(messagesRef, { user: username, imageUrl: url, timestamp: Date.now() });
+            })
+            .catch((error) => console.error("Image upload failed:", error));
+        }
+      });
+
+      // Load messages
       const loadMessages = () => {
         onValue(messagesRef, (snapshot) => {
           chatContainer.innerHTML = "";
@@ -212,15 +229,17 @@
               const messageElement = document.createElement("div");
               messageElement.classList.add("message");
               messageElement.classList.add(msg.user === username ? "user" : "other");
-              messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
-              chatContainer.appendChild(messageElement);
-            });
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+              if (msg.text) {
+                messageElement.innerHTML = `<span>${msg.user}:</span> ${msg.text}`;
+              } else if (msg.imageUrl) {
+                messageElement.innerHTML = `<span>${msg.user}:</span> <img src="${msg.imageUrl}" alt="Image" style="max-width: 100%; border-radius: 10px;" />`;
+              }
+              chatContainer.appendChild(messageElement);            });
           }
         });
       };
 
-      // Load the messages and start the timer
+      // Load the messages initially
       loadMessages();
     </script>
   </body>
