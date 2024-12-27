@@ -74,17 +74,6 @@
         color: black;
       }
 
-      .delete-button {
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        background: transparent;
-        border: none;
-        color: red;
-        font-size: 0.8em;
-        cursor: pointer;
-      }
-
       #message-input-container {
         display: flex;
         align-items: center;
@@ -212,14 +201,6 @@
                 messageElement.innerHTML = `<span>${msg.user}</span>: ${msg.text}`;
               }
 
-              const deleteButton = document.createElement("button");
-              deleteButton.classList.add("delete-button");
-              deleteButton.textContent = "Delete";
-              deleteButton.addEventListener("click", () => {
-                remove(ref(database, `messages/${key}`));
-              });
-
-              messageElement.appendChild(deleteButton);
               chatContainer.appendChild(messageElement);
             });
           }
@@ -231,3 +212,4 @@
     </script>
   </body>
 </html>
+
