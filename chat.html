@@ -184,7 +184,7 @@
           messageInput.value = "";
           // Add a delay to remove the message after 1 minute
           messageRef.then(ref => {
-            setTimeout(() => remove(ref), 30000);
+            setTimeout(() => remove(ref), 3660000);
           });
         }
       });
@@ -208,7 +208,7 @@
               const currentTime = Date.now();
               const messageTime = msg.timestamp || 0;
               const messageAge = currentTime - messageTime;
-              if (messageAge > 60000) {
+              if (messageAge > 3660000) {
                 remove(ref(database, `messages/${key}`));
               }
 
